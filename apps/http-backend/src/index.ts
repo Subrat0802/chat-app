@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Request, response, Response, Router } from "express";
 import { prismaClient } from "@repo/db/client";
 import { signupSchema, signinSchema } from "@repo/common/types";
 import bcrypt from "bcrypt";
@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/be-common";
+import { middleware } from "./middleware";
 
 const app = express();
 
@@ -145,21 +146,69 @@ app.post("/signin", async (req, res) => {
   }
 });
 
-app.post("/room", async (req, res) => {
-  const { roomName, ownerId } = req.body;
+app.post("/room", middleware, async (req, res) => {
+  const { roomName} = req.body;
+  //@ts-ignore
+  const ownerId = req.userId.id
+  if(!roomName || !ownerId){
+    return res.status(404).json({
+      message:"Room name is required",
+      success:false
+    })
+  }
+
+  const checkSameName = await prismaClient.room.findFirst({
+    where:{
+      roomName
+    }
+  })
+
+  if(checkSameName){
+    return res.status(404).json({
+      message:"Room name is already present. please try with different room name",
+      success:false
+    })
+  }
+
   const respone = await prismaClient.room.create({
     data: {
       roomName,
       ownerId,
     },
   });
-  res.json({
-    respone,
+  res.status(200).json({
+    response:respone,
+    message:"Room is created",
+    success:true
   });
 });
 
-app.post("/chat", async (req, res) => {
-  const { text, senderId, roomId } = req.body;
+app.post("/chat", middleware, async (req, res) => {
+  const { text, roomId } = req.body;
+  //@ts-ignore
+  const senderId = req.userId.id;
+  if(!text || !roomId){
+    return res.status(404).json({
+      message:"Text is required",
+      success:false
+    })
+  }
+
+  const isUserMember = await prismaClient.room.findFirst({
+    where:{
+      id:roomId,
+      members:{
+        some: {id:senderId}
+      }
+    },
+  })
+
+  if(!isUserMember){
+    return res.status(404).json({
+      message:"You're not a member of this room and cannot send messages",
+      success:false
+    })
+  }
   const respone = await prismaClient.chat.create({
     data: {
       text,
@@ -167,9 +216,154 @@ app.post("/chat", async (req, res) => {
       roomId,
     },
   });
-  res.json({
-    respone,
+  if(!response){
+    return res.status(404).json({
+      message:"Error while adding msg to database",
+      success:false
+    })
+  }
+  res.status(200).json({
+    respone:respone,
+    message:"Message added"
   });
 });
+
+
+app.post("/joinroom/:roomId", middleware, async (req, res) => {
+  try{
+    const {roomId} = req.params;
+    //@ts-ignore
+    const userId = req.userId.id;
+    if(!roomId || !userId){
+      return res.status(404).json({
+        message:"Invalid credentials, try again",
+        success:false
+      })
+    }
+
+    const checkRoom = await prismaClient.room.findUnique({
+      where: { 
+        id: roomId 
+      },
+      include: { members: true }  
+    });
+
+    if(!checkRoom){
+      return res.status(404).json({
+        message:"The room you trying to join is not valid.",
+        success:false
+      })
+    }
+
+    const alreadyMember = checkRoom.members.some(m => m.id === userId);
+    if (alreadyMember) {
+      return res.status(400).json({
+        message: "You are already a member of this room",
+        success: false
+      });
+    }
+
+    const addMember = await prismaClient.room.update({
+      where: {
+        id: roomId
+      },
+      data: {
+        members:{
+          connect:{id: userId}
+        }
+      },
+      include:{
+        members:true
+      }
+    })
+
+    if(!addMember){
+      return res.status(404).json({
+        message:"Error while joining room",
+        success:false
+      })
+    }
+
+    return res.status(200).json({
+      message:"You join the room successfully",
+      success:true,
+      roomId:roomId
+    })
+
+
+  }catch(error){
+    return res.status(500).json({
+      message:"Server error while joining room"
+    })
+  }
+})
+
+app.get("/geRoomsDetails/:roomId", middleware, async (req, res) => {
+  try{
+    const {roomId} = req.params;
+
+    const respone = await prismaClient.room.findFirst({
+      where:{
+        id:roomId,
+      },
+      include:{
+        members:true,
+        chats:true
+      }
+    })
+    res.json({
+      data:respone,
+      message:"Room details"
+    })
+  }catch(error){
+    return res.status(500).json({
+      message:"Server error while while getting room details",
+      success:false
+    })
+  }
+})
+
+
+app.get("/me", middleware, async (req, res) => {
+  try{
+    //@ts-ignore
+    const {id} = req.userId;
+    if(!id){
+      return res.status(404).json({
+        message:"Not getting user id",
+        success:false
+      })
+    }
+
+    const response = await prismaClient.user.findFirst({
+      where:{
+        id:id
+      }
+    })
+
+    
+
+    if(!response){
+      return res.status(404).json({
+        message:"user not found, try to login again.",
+        success:false,
+      })
+    }
+
+    const {password: _, ...safeParse} = response
+
+    return res.status(200).json({
+      message:"user details",
+      success:true,
+      data:safeParse
+    })
+
+  }catch(error){
+    return res.status(500).json({
+      message:"Server error while hitting me route",
+      success:false
+    })
+  }
+})
 
 app.listen(3001);
