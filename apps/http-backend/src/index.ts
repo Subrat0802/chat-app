@@ -298,6 +298,47 @@ app.post("/joinroom/:roomId", middleware, async (req, res) => {
   }
 })
 
+app.get("/getAllRoomsOfUser", middleware, async (req, res) => {
+  try{
+    //@ts-ignore
+    const {id} = req.userId;
+    if(!id) {
+      return res.status(404).json({
+        message:"User is is not present.",
+        success:false
+      })
+    }
+
+    const response = await prismaClient.user.findFirst({
+      where:{
+        id:id
+      },
+      include:{
+        createdRooms: true
+      }
+    })
+
+    if(!response){
+      return res.status(404).json({
+        message:"Error while grtting rooms",
+        success:false
+      })
+    }
+
+    return res.status(200).json({
+      message:"All rooms",
+      response,
+      success:false
+    })
+  }catch(error){
+    return res.status(500).json({
+      message:"Server error while getting rooms",
+      success:false,
+      error
+    })
+  }
+})
+
 app.get("/geRoomsDetails/:roomId", middleware, async (req, res) => {
   try{
     const {roomId} = req.params;
