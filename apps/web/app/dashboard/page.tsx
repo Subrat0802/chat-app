@@ -2,11 +2,13 @@
 import { setRooms } from "@/redux/slices/rooms";
 import { createRoom, getRooms } from "@/services/operations/dashboard";
 import { useEffect, useState } from "react"
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 const Page = () => {
   const dispatch = useDispatch();
   const [inputText, setInputText] = useState("");
+
+  const rooms = useSelector((e: any) => e.rooms.rooms);
 
   const getUserRoom = async () => {
     const response = await getRooms();
@@ -18,7 +20,6 @@ const Page = () => {
     await getUserRoom();
   })();
 }, []);
-
 
   const handleClick = async () => {
   try {
@@ -37,10 +38,19 @@ const Page = () => {
 
   }
   return (
-    <div className="w-screen h-screen text-white bg-[#0f0f0f]">
+    <div className="w-screen h-screen flex flex-col items-center gap-3 text-white bg-[#0f0f0f] pt-10">
       <p>Hello User</p>
-      <input value={inputText} onChange={(e) => handleChange(e)} placeholder="Room name.."/>
+      <div >
+      <input className="border " value={inputText} onChange={(e) => handleChange(e)} placeholder="Room name.."/>
       <button className="bg-white p-2 border text-black" onClick={handleClick}>Create room</button>
+      </div>
+      <div>
+        {
+          rooms.map((el:any) => (
+            <p key={el.id}>{el.roomName}</p>
+          ))
+        }
+      </div>
     </div>
   )
 }
