@@ -12,8 +12,8 @@ export const apiConnector = (
     return axiosInstance({
         method,
         url,
-        data: bodyData,
         headers,
-        params
-    })
+        params,
+        ...(method.toUpperCase() !== "GET" && { data: bodyData }) // only add data if not GET
+    });
 }

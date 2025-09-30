@@ -352,6 +352,12 @@ app.get("/geRoomsDetails/:roomId", middleware, async (req, res) => {
         chats:true
       }
     })
+    if(!respone) {
+      return res.status(404).json({
+        message:"Error while getting room details",
+        success:false
+      })
+    }
     res.json({
       data:respone,
       message:"Room details"
