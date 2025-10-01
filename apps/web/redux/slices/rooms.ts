@@ -1,20 +1,35 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { Key } from "react";
 
 // Define room object type
-interface Room {
+export interface Room {
   id: string;
   roomName: string;
   ownerId: string;
   createdAt: string;
 }
 
-interface RoomState {
+export interface ChatProp {
+  text: string;
+  id: Key
+}
+
+export interface RoomDetail {
+  roomName: string,
+  members: string[],
+  chats: ChatProp[]
+
+}
+
+export interface RoomState {
   rooms: Room[]; // array of objects
+  roomDetail: RoomDetail | null
 }
 
 // Initialize as empty array
 const initialState: RoomState = {
   rooms: [],
+  roomDetail: null
 };
 
 const roomSlice = createSlice({
@@ -29,8 +44,14 @@ const roomSlice = createSlice({
     setRooms(state, action: PayloadAction<Room[]>) {
       state.rooms = action.payload;
     },
+    setRoomDetails(state, action) {
+      state.roomDetail = action.payload
+    },
+    addMsg(state, action) {
+      state.roomDetail?.chats.push(action.payload);
+    }
   },
 });
 
-export const { addRoom, setRooms } = roomSlice.actions;
+export const { addRoom, setRooms, setRoomDetails, addMsg } = roomSlice.actions;
 export default roomSlice.reducer;

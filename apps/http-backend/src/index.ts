@@ -186,47 +186,55 @@ app.post("/room", middleware, async (req, res) => {
 app.post("/chat", middleware, async (req, res) => {
   const { text, roomId } = req.body;
   //@ts-ignore
-  const senderId = req.userId.id;
-  if(!text || !roomId){
-    return res.status(404).json({
-      message:"Text is required",
-      success:false
-    })
+  const senderId = req.userId?.id;
+
+  if (!text || !roomId) {
+    return res.status(400).json({
+      message: "Text and roomId are required",
+      success: false
+    });
   }
 
+  // Check if user is member of room
   const isUserMember = await prismaClient.room.findFirst({
-    where:{
-      id:roomId,
-      members:{
-        some: {id:senderId}
+    where: {
+      id: roomId,
+      members: {
+        some: { id: senderId }
       }
     },
-  })
+  });
 
-  if(!isUserMember){
-    return res.status(404).json({
-      message:"You're not a member of this room and cannot send messages",
-      success:false
-    })
+  if (!isUserMember) {
+    return res.status(403).json({
+      message: "You're not a member of this room and cannot send messages",
+      success: false
+    });
   }
-  const respone = await prismaClient.chat.create({
+
+  // Create chat message
+  const response = await prismaClient.chat.create({
     data: {
       text,
       senderId,
       roomId,
     },
   });
-  if(!response){
-    return res.status(404).json({
-      message:"Error while adding msg to database",
-      success:false
-    })
+
+  if (!response) {
+    return res.status(500).json({
+      message: "Error while adding message to database",
+      success: false
+    });
   }
+
   res.status(200).json({
-    respone:respone,
-    message:"Message added"
+    response: response,
+    message: "Message added",
+    success: true
   });
 });
+
 
 
 app.post("/joinroom/:roomId", middleware, async (req, res) => {
