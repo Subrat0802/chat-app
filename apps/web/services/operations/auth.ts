@@ -2,7 +2,7 @@
 import { endpoint } from "../api";
 import { apiConnector } from "../apiConnector";
 
-const {SIGNUP_URL, SIGNIN_URL} = endpoint;
+const {SIGNUP_URL, SIGNIN_URL, ME_ROUTE} = endpoint;
 
 export interface AuthProps {
     username?: string | undefined;
@@ -32,5 +32,15 @@ export const signin = async ({username, email, password}: AuthProps) => {
 
     }catch(error){
         console.log("ERROR",error);
+    }
+}
+
+export const meRoute = async () => {
+    try{
+        const response = await apiConnector("GET", ME_ROUTE);
+        console.log("MEEEEEEE", response);
+        return response;
+    }catch(error){
+        console.log("Error me route", error)
     }
 }

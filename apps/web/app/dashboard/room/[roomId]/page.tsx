@@ -6,6 +6,8 @@ import {
   RoomDetail,
   addMsg,
 } from "@/redux/slices/rooms";
+import { setUserDetails, UserState } from "@/redux/slices/userDetails";
+import { meRoute } from "@/services/operations/auth";
 import { getRoomDetails } from "@/services/operations/dashboard";
 import { MoveRight, Users } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -26,7 +28,7 @@ export default function RoomPage() {
     (state: { rooms: RoomState }) => state.rooms.roomDetail
   );
 
-  console.log("roomDetail", roomDetail);
+  const userDetail = useSelector((state: UserState) => state.userDetails);
 
   useEffect(() => {
     if (!fetched.current) {
@@ -47,14 +49,16 @@ export default function RoomPage() {
   const handleEnter = () => {
     const value = inputText.current?.value.trim();
     if (!value) return;
-    const ws = new WebSocket("ws://localhost:8080");
+    const ws = new WebSocket(`ws://localhost:8080?roomId=${roomDetail.id}&user=${userDetail.id}`);
     ws.onopen = () => ws.send(value);
     ws.onmessage = (event) => {
       console.log("Raw message from server (string):", event.data); // always string
 
       try {
         const msg = JSON.parse(event.data);
+        if(inputText.current) inputText.current.value = ""
         dispatch(addMsg(msg.data));
+        
       } catch (err) {
         console.error("Failed to parse WebSocket message:", err, event.data);
       }
@@ -71,7 +75,8 @@ export default function RoomPage() {
           <h1 className="text-xl font-bold">{roomDetail.roomName}</h1>
         </div>
       </div>
-      <div className="h-[86vh]">
+
+      <div className="h-[86vh] overflow-y-scroll custom-scroll">
         {roomDetail.chats.map((el: ChatProp) => (
           <p key={el.id}>{el.text}</p>
         ))}

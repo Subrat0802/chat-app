@@ -4,6 +4,8 @@ import { useRef, useState } from "react"
 import { Eye, EyeOff, Mail, Lock, User, MessageCircle } from 'lucide-react';
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+import { setUserDetails } from "@/redux/slices/userDetails";
 
 export function AuthPage({isSignin}:{isSignin: boolean}){
     const router = useRouter();
@@ -12,6 +14,7 @@ export function AuthPage({isSignin}:{isSignin: boolean}){
     const passwordRef = useRef<HTMLInputElement>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const dispatch = useDispatch();
 
     const handleClick = async () => {
         const username = nameRef.current?.value;
@@ -35,6 +38,7 @@ export function AuthPage({isSignin}:{isSignin: boolean}){
                 if(!response){
                     return;
                 }
+                dispatch(setUserDetails(response.data.user));
                 toast.success("You're signin");
                 router.push("/dashboard");
             }

@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 .custom-scroll {
-  --sb-track-color: #191e21;
-  --sb-thumb-color: #080808;
+  --sb-track-color: #232E33;
+  --sb-thumb-color: #0c2b73;
   --sb-size: 4px;
 }
 

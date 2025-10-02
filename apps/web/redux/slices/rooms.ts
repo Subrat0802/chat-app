@@ -15,6 +15,7 @@ export interface ChatProp {
 }
 
 export interface RoomDetail {
+  [x: string]: any;
   roomName: string,
   members: string[],
   chats: ChatProp[]
@@ -48,7 +49,12 @@ const roomSlice = createSlice({
       state.roomDetail = action.payload
     },
     addMsg(state, action) {
-      state.roomDetail?.chats.push(action.payload);
+
+      if(
+        state.roomDetail && !state.roomDetail.chats.some((chat) => chat.id === action.payload.id)
+      ){
+        state.roomDetail?.chats.push(action.payload);
+      }
     }
   },
 });

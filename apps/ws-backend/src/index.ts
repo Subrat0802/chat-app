@@ -5,22 +5,35 @@ const wss = new WebSocketServer({ port: 8080 });
 
 const usersSocket: WebSocket[] = [];
 console.log(usersSocket);
-wss.on("connection", (socket) => {
-  console.log("Client connected");
+
+wss.on("connection", (socket, request) => {
+  const url = request.url; // "/?roomId=abc123&user=xyz456"
+  if (!url) return;
+
+  const queryParams = new URLSearchParams(url.split("?")[1]);
+  const roomId = queryParams.get("roomId"); // "abc123"
+  const userId = queryParams.get("user"); // "xyz456"
+
+  // console.log("Client connected:", { roomId, userId });
+
+  console.log("Client connected", url);
   usersSocket.push(socket);
 
   socket.on("message", async (message) => {
     const msg = message.toString().trim();
     console.log("Received:", msg);
 
-    if (msg === "ping") {
-      console.log("Sending Pong and creating chat");
+    if (msg) {
+      if (!roomId || !userId) {
+        console.log("Missing roomId or userId");
+        return;
+      }
 
       const response = await prismaClient.chat.create({
         data: {
-          roomId: "f0433a65-748b-449a-aec1-9c961660c91b",
-          text: "jaiiiii hooooooooo",
-          senderId: "83ec846a-f7f9-47e6-a934-11b6ca24ee57",
+          roomId: roomId,
+          text: msg,
+          senderId: userId,
         },
       });
 

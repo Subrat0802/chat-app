@@ -2,7 +2,8 @@ const BASE_URL = "http://localhost:3001";
 
 export const endpoint = {
     SIGNUP_URL: BASE_URL + "/signup",
-    SIGNIN_URL: BASE_URL + "/signin"
+    SIGNIN_URL: BASE_URL + "/signin",
+    ME_ROUTE: BASE_URL + "/me"
 }
 
 export const dashboardEndpoint = {

@@ -6,6 +6,8 @@ import { MessageCircle, PlusCircleIcon, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Link from "next/link";
+import { meRoute } from "@/services/operations/auth";
+import { setUserDetails } from "@/redux/slices/userDetails";
 
 export default function DashboardLayout({
   children,
@@ -17,6 +19,19 @@ export default function DashboardLayout({
   const [createGrp, setCreateGrp] = useState(false);
 
   const rooms = useSelector((e: any) => e.rooms.rooms);
+
+  const getUser = async () => {
+    const response = await meRoute();
+    if(!response){
+      return
+    }
+    dispatch(setUserDetails(response.data?.data))
+  }
+
+  useEffect(() => {
+    getUser();
+  },[]) 
+  
 
   const getUserRoom = async () => {
     const response = await getRooms();
@@ -47,6 +62,16 @@ export default function DashboardLayout({
   const handleCreateGrp = () => {
     setCreateGrp(!createGrp);
   };
+
+  const handleLogout = async () => {
+  await fetch("http://localhost:3001/logout", {
+    method: "POST",
+    credentials: "include",
+  });
+
+  window.location.href = "/signin"; // redirect immediately
+};
+
 
   return (
     <div className="min-h-[100vh] bg-[#161818] flex text-white relative">
@@ -86,6 +111,7 @@ export default function DashboardLayout({
           <div onClick={handleCreateGrp}>
             <PlusCircleIcon />
           </div>
+          <div onClick={handleLogout}>Logout</div>
         </div>
 
         <div className="px-3 my-3">
@@ -97,7 +123,7 @@ export default function DashboardLayout({
 
         <div className="flex-1 overflow-y-auto custom-scroll">
           <div className="flex flex-col gap-2">
-            {rooms.map((el: any) => (
+            {rooms && rooms.map((el: any) => (
               <Link
                 key={el.id}
                 href={`/dashboard/room/${el.id}`}
