@@ -30,6 +30,13 @@ export default function RoomPage() {
 
   const userDetail = useSelector((state: UserState) => state.userDetails);
 
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Scroll to the bottom whenever chats change
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [roomDetail?.chats]);
+
   useEffect(() => {
     if (!fetched.current) {
       setLoading(true);
@@ -49,16 +56,17 @@ export default function RoomPage() {
   const handleEnter = () => {
     const value = inputText.current?.value.trim();
     if (!value) return;
-    const ws = new WebSocket(`ws://localhost:8080?roomId=${roomDetail.id}&user=${userDetail.id}`);
+    const ws = new WebSocket(
+      `ws://localhost:8080?roomId=${roomDetail.id}&user=${userDetail.id}`
+    );
     ws.onopen = () => ws.send(value);
     ws.onmessage = (event) => {
       console.log("Raw message from server (string):", event.data); // always string
 
       try {
         const msg = JSON.parse(event.data);
-        if(inputText.current) inputText.current.value = ""
+        if (inputText.current) inputText.current.value = "";
         dispatch(addMsg(msg.data));
-        
       } catch (err) {
         console.error("Failed to parse WebSocket message:", err, event.data);
       }
@@ -76,11 +84,27 @@ export default function RoomPage() {
         </div>
       </div>
 
-      <div className="h-[86vh] overflow-y-scroll custom-scroll">
+      <div className="h-[86vh] overflow-y-scroll custom-scroll flex flex-col gap-3 p-2">
         {roomDetail.chats.map((el: ChatProp) => (
-          <p key={el.id}>{el.text}</p>
+          <div
+            key={el.id}
+            className={`flex ${el.senderId === userDetail.id ? "justify-end" : "justify-start"}`}
+          >
+            <p
+              className={`${
+                el.senderId === userDetail.id
+                  ? "bg-blue-700 text-white"
+                  : "bg-gray-700 text-white"
+              } w-fit max-w-[70%] p-2 rounded-2xl break-words`}
+            >
+              {el.text}
+            </p>
+          </div>
         ))}
+        {/* Dummy div to scroll into view */}
+        <div ref={messagesEndRef}></div>
       </div>
+
       <div className="h-[7vh] flex w-full px-2 gap-2 pb-2 text-white ">
         <input
           onKeyDown={(e) => {

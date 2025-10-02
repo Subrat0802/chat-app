@@ -18,8 +18,8 @@ export const createRoom = async (roomName:string) => {
 export const getRooms = async () => {
     try{
         const response = await apiConnector("GET", GET_USER_ROOMS);
-        // console.log("GET_USER_ROOMS", response);
-        return response.data.response.createdRooms;
+        console.log("GET_USER_ROOMS", response);
+        return response.data.response;
     }catch(error){
         console.log(error);
     }

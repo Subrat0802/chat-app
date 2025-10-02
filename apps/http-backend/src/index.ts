@@ -317,14 +317,19 @@ app.get("/getAllRoomsOfUser", middleware, async (req, res) => {
       })
     }
 
+    
+
     const response = await prismaClient.user.findFirst({
       where:{
         id:id
       },
       include:{
-        createdRooms: true
+        createdRooms: true,
+        joinedRooms:true
       }
     })
+
+    console.log("ALl rooms", response);
 
     if(!response){
       return res.status(404).json({

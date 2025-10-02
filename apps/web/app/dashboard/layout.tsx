@@ -1,6 +1,6 @@
 // app/dashboard/layout.tsx
 "use client";
-import { setRooms } from "@/redux/slices/rooms";
+import { setRooms, setRoomYouJoined } from "@/redux/slices/rooms";
 import { createRoom, getRooms } from "@/services/operations/dashboard";
 import { MessageCircle, PlusCircleIcon, Users } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -17,8 +17,9 @@ export default function DashboardLayout({
   const dispatch = useDispatch();
   const [inputText, setInputText] = useState("");
   const [createGrp, setCreateGrp] = useState(false);
+  const [yourRoom, setYourRoom] = useState(true);
 
-  const rooms = useSelector((e: any) => e.rooms.rooms);
+  const {rooms, roomYouJoined} = useSelector((e: any) => e.rooms);
 
   const getUser = async () => {
     const response = await meRoute();
@@ -35,7 +36,8 @@ export default function DashboardLayout({
 
   const getUserRoom = async () => {
     const response = await getRooms();
-    dispatch(setRooms(response));
+    dispatch(setRooms(response.createdRooms));
+    dispatch(setRoomYouJoined(response.joinedRooms))
   };
 
   useEffect(() => {
@@ -71,6 +73,15 @@ export default function DashboardLayout({
 
   window.location.href = "/signin"; // redirect immediately
 };
+
+
+const handleYourRoom = () => {
+  setYourRoom(true)
+}
+
+const handleJoinedRoom = () => {
+  setYourRoom(false)
+}
 
 
   return (
@@ -121,9 +132,41 @@ export default function DashboardLayout({
           />
         </div>
 
+        <div className="flex justify-evenly my-4 items-center">
+          <div className="cursor-pointer" onClick={handleYourRoom}>
+            Created by You
+          </div> 
+          <div className="cursor-pointer" onClick={handleJoinedRoom}>
+            Joined Rooms
+          </div>
+        </div>
+
         <div className="flex-1 overflow-y-auto custom-scroll">
           <div className="flex flex-col gap-2">
-            {rooms && rooms.map((el: any) => (
+            {yourRoom && rooms && rooms.map((el: any) => (
+              <Link
+                key={el.id}
+                href={`/dashboard/room/${el.id}`}
+                className="flex gap-3 p-1 pl-3 justify-between items-center hover:bg-[#242626] transition-all duration-200"
+              >
+                <div className="flex gap-3">
+                  <div className="bg-white/20 w-fit p-3 rounded-full">
+                    <Users />
+                  </div>
+                  <div className="flex flex-col justify-between py-1">
+                    <p>{el.roomName}</p>
+                    <p className="text-gray-700 text-[10px]">2 minutes ago</p>
+                  </div>
+                </div>
+
+                <div className="mr-3 flex justify-center items-center">
+                  <div className="text-center text-[9px] font-bold px-2 py-1 rounded-full bg-blue-900">
+                    2
+                  </div>
+                </div>
+              </Link>
+            ))}
+            {!yourRoom && rooms && roomYouJoined.map((el: any) => (
               <Link
                 key={el.id}
                 href={`/dashboard/room/${el.id}`}

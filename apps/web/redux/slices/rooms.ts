@@ -10,6 +10,7 @@ export interface Room {
 }
 
 export interface ChatProp {
+  [x: string]: any;
   text: string;
   id: Key
 }
@@ -24,13 +25,15 @@ export interface RoomDetail {
 
 export interface RoomState {
   rooms: Room[]; // array of objects
-  roomDetail: RoomDetail | null
+  roomDetail: RoomDetail | null;
+  roomYouJoined: RoomDetail | null
 }
 
 // Initialize as empty array
 const initialState: RoomState = {
   rooms: [],
-  roomDetail: null
+  roomDetail: null,
+  roomYouJoined: null
 };
 
 const roomSlice = createSlice({
@@ -48,6 +51,9 @@ const roomSlice = createSlice({
     setRoomDetails(state, action) {
       state.roomDetail = action.payload
     },
+    setRoomYouJoined(state, action) {
+      state.roomYouJoined = action.payload
+    },
     addMsg(state, action) {
 
       if(
@@ -59,5 +65,5 @@ const roomSlice = createSlice({
   },
 });
 
-export const { addRoom, setRooms, setRoomDetails, addMsg } = roomSlice.actions;
+export const { addRoom, setRooms, setRoomDetails, setRoomYouJoined, addMsg } = roomSlice.actions;
 export default roomSlice.reducer;
