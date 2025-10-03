@@ -1,9 +1,14 @@
 // app/dashboard/layout.tsx
 "use client";
-import { setRooms, setRoomYouJoined } from "@/redux/slices/rooms";
-import { createRoom, getRooms } from "@/services/operations/dashboard";
+import { Room, setRooms, setRoomYouJoined } from "@/redux/slices/rooms";
+import {
+  createRoom,
+  getAllRooms,
+  getRooms,
+  joinRoom,
+} from "@/services/operations/dashboard";
 import { MessageCircle, PlusCircleIcon, Users } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Link from "next/link";
 import { meRoute } from "@/services/operations/auth";
@@ -18,26 +23,28 @@ export default function DashboardLayout({
   const [inputText, setInputText] = useState("");
   const [createGrp, setCreateGrp] = useState(false);
   const [yourRoom, setYourRoom] = useState(true);
+  const [searchRoomText, setSearchRoomText] = useState<string>("");
+  const [searchRooms, setSearchRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const {rooms, roomYouJoined} = useSelector((e: any) => e.rooms);
+  const { rooms, roomYouJoined } = useSelector((e: any) => e.rooms);
 
   const getUser = async () => {
     const response = await meRoute();
-    if(!response){
-      return
+    if (!response) {
+      return;
     }
-    dispatch(setUserDetails(response.data?.data))
-  }
+    dispatch(setUserDetails(response.data?.data));
+  };
 
   useEffect(() => {
     getUser();
-  },[]) 
-  
+  }, []);
 
   const getUserRoom = async () => {
     const response = await getRooms();
     dispatch(setRooms(response.createdRooms));
-    dispatch(setRoomYouJoined(response.joinedRooms))
+    dispatch(setRoomYouJoined(response.joinedRooms));
   };
 
   useEffect(() => {
@@ -66,23 +73,49 @@ export default function DashboardLayout({
   };
 
   const handleLogout = async () => {
-  await fetch("http://localhost:3001/logout", {
-    method: "POST",
-    credentials: "include",
-  });
+    await fetch("http://localhost:3001/logout", {
+      method: "POST",
+      credentials: "include",
+    });
 
-  window.location.href = "/signin"; // redirect immediately
-};
+    window.location.href = "/signin"; // redirect immediately
+  };
 
+  const handleYourRoom = () => {
+    setYourRoom(true);
+  };
 
-const handleYourRoom = () => {
-  setYourRoom(true)
-}
+  const handleJoinedRoom = () => {
+    setYourRoom(false);
+  };
 
-const handleJoinedRoom = () => {
-  setYourRoom(false)
-}
+  const handleSearchRoom = (e: ChangeEvent<HTMLInputElement>) => {
+    setSearchRoomText(e.target.value);
+  };
 
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (searchRoomText.trim() !== "") {
+        const response = await getAllRooms(searchRoomText);
+        if (response) {
+          setSearchRooms(response.rooms || []);
+        }
+        console.log("API called with:", response);
+      } else {
+        setSearchRooms([]); // clear results if input is empty
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [searchRoomText]);
+
+  const handleJoinRoom = async (id: string) => {
+    setLoading(true)
+    const response = await joinRoom(id)
+    console.log("JOIN room response", response)
+    getUserRoom();
+    setLoading(false)
+  }
 
   return (
     <div className="min-h-[100vh] bg-[#161818] flex text-white relative">
@@ -125,17 +158,33 @@ const handleJoinedRoom = () => {
           <div onClick={handleLogout}>Logout</div>
         </div>
 
-        <div className="px-3 my-3">
+        <div className="px-3 my-3 relative">
           <input
-            placeholder="Search group "
+            placeholder="Search group"
             className="bg-[#343636] w-full p-2 rounded-full"
+            onChange={handleSearchRoom}
+            value={searchRoomText}
           />
+
+          {searchRoomText !== "" && searchRooms.length > 0 && (
+            <div className="absolute top-full left-3 w-[93%]  bg-[#242626] mt-1 rounded-2xl overflow-hidden z-10">
+              {loading ? <p>Loading...</p> : searchRooms.map((el) => (
+                <div
+                  key={el.id}
+                  className="px-3 py-2 hover:bg-gray-700 cursor-pointer flex justify-between items-center text-sm"
+                >
+                  <p>{el.roomName}</p>
+                  <p onClick={() => handleJoinRoom(el.id)} className="hover:text-blue-700 transition-all duration-200 cursor-pointer">Join Room</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-evenly my-4 items-center">
           <div className="cursor-pointer" onClick={handleYourRoom}>
             Created by You
-          </div> 
+          </div>
           <div className="cursor-pointer" onClick={handleJoinedRoom}>
             Joined Rooms
           </div>
@@ -143,52 +192,56 @@ const handleJoinedRoom = () => {
 
         <div className="flex-1 overflow-y-auto custom-scroll">
           <div className="flex flex-col gap-2">
-            {yourRoom && rooms && rooms.map((el: any) => (
-              <Link
-                key={el.id}
-                href={`/dashboard/room/${el.id}`}
-                className="flex gap-3 p-1 pl-3 justify-between items-center hover:bg-[#242626] transition-all duration-200"
-              >
-                <div className="flex gap-3">
-                  <div className="bg-white/20 w-fit p-3 rounded-full">
-                    <Users />
+            {yourRoom &&
+              rooms &&
+              rooms.map((el: any) => (
+                <Link
+                  key={el.id}
+                  href={`/dashboard/room/${el.id}`}
+                  className="flex gap-3 p-1 pl-3 justify-between items-center hover:bg-[#242626] transition-all duration-200"
+                >
+                  <div className="flex gap-3">
+                    <div className="bg-white/20 w-fit p-3 rounded-full">
+                      <Users />
+                    </div>
+                    <div className="flex flex-col justify-between py-1">
+                      <p>{el.roomName}</p>
+                      <p className="text-gray-700 text-[10px]">2 minutes ago</p>
+                    </div>
                   </div>
-                  <div className="flex flex-col justify-between py-1">
-                    <p>{el.roomName}</p>
-                    <p className="text-gray-700 text-[10px]">2 minutes ago</p>
-                  </div>
-                </div>
 
-                <div className="mr-3 flex justify-center items-center">
-                  <div className="text-center text-[9px] font-bold px-2 py-1 rounded-full bg-blue-900">
-                    2
+                  <div className="mr-3 flex justify-center items-center">
+                    <div className="text-center text-[9px] font-bold px-2 py-1 rounded-full bg-blue-900">
+                      2
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
-            {!yourRoom && rooms && roomYouJoined.map((el: any) => (
-              <Link
-                key={el.id}
-                href={`/dashboard/room/${el.id}`}
-                className="flex gap-3 p-1 pl-3 justify-between items-center hover:bg-[#242626] transition-all duration-200"
-              >
-                <div className="flex gap-3">
-                  <div className="bg-white/20 w-fit p-3 rounded-full">
-                    <Users />
+                </Link>
+              ))}
+            {!yourRoom &&
+              rooms &&
+              roomYouJoined.map((el: any) => (
+                <Link
+                  key={el.id}
+                  href={`/dashboard/room/${el.id}`}
+                  className="flex gap-3 p-1 pl-3 justify-between items-center hover:bg-[#242626] transition-all duration-200"
+                >
+                  <div className="flex gap-3">
+                    <div className="bg-white/20 w-fit p-3 rounded-full">
+                      <Users />
+                    </div>
+                    <div className="flex flex-col justify-between py-1">
+                      <p>{el.roomName}</p>
+                      <p className="text-gray-700 text-[10px]">2 minutes ago</p>
+                    </div>
                   </div>
-                  <div className="flex flex-col justify-between py-1">
-                    <p>{el.roomName}</p>
-                    <p className="text-gray-700 text-[10px]">2 minutes ago</p>
-                  </div>
-                </div>
 
-                <div className="mr-3 flex justify-center items-center">
-                  <div className="text-center text-[9px] font-bold px-2 py-1 rounded-full bg-blue-900">
-                    2
+                  <div className="mr-3 flex justify-center items-center">
+                    <div className="text-center text-[9px] font-bold px-2 py-1 rounded-full bg-blue-900">
+                      2
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
           </div>
         </div>
       </div>

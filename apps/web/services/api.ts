@@ -9,5 +9,7 @@ export const endpoint = {
 export const dashboardEndpoint = {
     CREATE_ROOM: BASE_URL + "/room",
     GET_USER_ROOMS: BASE_URL + "/getAllRoomsOfUser",
-    GET_ROOM_DETAILS: BASE_URL + "/geRoomsDetails"
+    GET_ROOM_DETAILS: BASE_URL + "/geRoomsDetails",
+    GET_ROOM_BY_SEARCH: BASE_URL + "/roomsBySearch",
+    JOIN_ROOM: BASE_URL + "/joinroom/"
 }

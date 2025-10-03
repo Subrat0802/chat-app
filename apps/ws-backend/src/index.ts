@@ -7,14 +7,12 @@ const usersSocket: WebSocket[] = [];
 console.log(usersSocket);
 
 wss.on("connection", (socket, request) => {
-  const url = request.url; // "/?roomId=abc123&user=xyz456"
+  const url = request.url; 
   if (!url) return;
 
   const queryParams = new URLSearchParams(url.split("?")[1]);
   const roomId = queryParams.get("roomId"); // "abc123"
   const userId = queryParams.get("user"); // "xyz456"
-
-  // console.log("Client connected:", { roomId, userId });
 
   console.log("Client connected", url);
   usersSocket.push(socket);

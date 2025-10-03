@@ -235,6 +235,62 @@ app.post("/chat", middleware, async (req, res) => {
   });
 });
 
+app.get("/roomsBySearch", middleware, async (req, res) => {
+  try {
+    const { roomsName } = req.query; 
+    //@ts-ignore
+    const userId = req.userId?.id;
+    console.log(roomsName);
+
+    if (!roomsName) {
+      return res.status(404).json({
+        message: "Room name is required",
+        success: false
+      });
+    }
+
+    const response = await prismaClient.room.findMany({
+      where: {
+        roomName: {
+          contains: String(roomsName),
+          mode: "insensitive",
+        },
+        ownerId: {
+          not: userId, // exclude rooms created by the user
+        },
+        NOT: {
+          members: {
+            some: {
+              id: userId, // exclude rooms already joined
+            },
+          },
+        },
+      },
+      include: {
+        owner: true,
+        members: true,
+      },
+    });
+
+    if (!response || response.length === 0) {
+      return res.status(404).json({
+        message: "Cannot find room with this name.",
+        success: false
+      });
+    }
+
+    res.status(200).json({
+      message: "Rooms by search",
+      success: true,
+      rooms: response
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server error while searching rooms",
+      success: false
+    });
+  }
+});
 
 
 app.post("/joinroom/:roomId", middleware, async (req, res) => {
